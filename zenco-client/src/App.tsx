@@ -85,7 +85,7 @@ const formatPremiumSvg = (svgStr: string) => {
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
 const isGoogleConfigured = !!GOOGLE_CLIENT_ID;
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5002';
+const API_URL = import.meta.env.API_URL || 'http://localhost:5002';
 
 function App() {
   const decorationsRef = useRef<HTMLDivElement>(null)

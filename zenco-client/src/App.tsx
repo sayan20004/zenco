@@ -85,6 +85,7 @@ const formatPremiumSvg = (svgStr: string) => {
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
 const isGoogleConfigured = !!GOOGLE_CLIENT_ID;
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5002';
 
 function App() {
   const decorationsRef = useRef<HTMLDivElement>(null)
@@ -289,7 +290,7 @@ function App() {
   // Captcha Fetching & Verifying Handlers
   const fetchAuthCaptcha = async () => {
     try {
-      const res = await fetch('http://localhost:5002/api/auth/captcha');
+      const res = await fetch(`${API_URL}/api/auth/captcha`);
       if (res.ok) {
         const data = await res.json();
         setCaptchaSvg(data.svg);
@@ -303,7 +304,7 @@ function App() {
 
   const fetchSearchCaptcha = async () => {
     try {
-      const res = await fetch('http://localhost:5002/api/auth/captcha');
+      const res = await fetch(`${API_URL}/api/auth/captcha`);
       if (res.ok) {
         const data = await res.json();
         setSearchCaptchaSvg(data.svg);
@@ -338,7 +339,7 @@ function App() {
     setSearchCaptchaError('');
 
     try {
-      const res = await fetch('http://localhost:5002/api/search/verify-captcha', {
+      const res = await fetch(`${API_URL}/api/search/verify-captcha`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -383,7 +384,7 @@ function App() {
 
     try {
       const searchCaptchaToken = localStorage.getItem('zen_search_captcha_token') || '';
-      const res = await fetch(`http://localhost:5002/api/search?q=${encodeURIComponent(query)}`, {
+      const res = await fetch(`${API_URL}/api/search?q=${encodeURIComponent(query)}`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${activeToken}`,
@@ -449,7 +450,7 @@ function App() {
     setOtpSuccessMsg('')
 
     try {
-      const res = await fetch('http://localhost:5002/api/auth/send-otp', {
+      const res = await fetch(`${API_URL}/api/auth/send-otp`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -496,7 +497,7 @@ function App() {
     setOtpError('')
 
     try {
-      const res = await fetch('http://localhost:5002/api/auth/verify-otp', {
+      const res = await fetch(`${API_URL}/api/auth/verify-otp`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: emailInput, otp: otpCode })
@@ -547,7 +548,7 @@ function App() {
     }
 
     try {
-      const res = await fetch('http://localhost:5002/api/auth/google', {
+      const res = await fetch(`${API_URL}/api/auth/google`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

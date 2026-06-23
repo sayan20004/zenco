@@ -1024,6 +1024,21 @@ function App() {
           </div>
         </div>
       )}
+
+      {/* Product Hunt Embed Badge */}
+      <a
+        href="https://www.producthunt.com/products/zenco?embed=true&amp;utm_source=badge-featured&amp;utm_medium=badge&amp;utm_campaign=badge-zenco"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="producthunt-badge"
+      >
+        <img
+          alt="zenco - zenco is your buddy while searching for icons | Product Hunt"
+          width="250"
+          height="54"
+          src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1178679&amp;theme=light&amp;t=1782191590899"
+        />
+      </a>
     </>
   )
 }

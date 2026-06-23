@@ -1733,3 +1733,28 @@ body {
   width: 140px;
   height: 48px;
 }
+
+/* Product Hunt Badge Styles */
+.producthunt-badge {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 9999;
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
+  filter: drop-shadow(0 8px 24px rgba(0, 0, 0, 0.3));
+}
+
+.producthunt-badge:hover {
+  transform: scale(1.05) translateY(-2px);
+}
+
+@media (max-width: 768px) {
+  .producthunt-badge {
+    bottom: 16px;
+    right: 16px;
+  }
+  .producthunt-badge img {
+    width: 200px;
+    height: auto;
+  }
+}

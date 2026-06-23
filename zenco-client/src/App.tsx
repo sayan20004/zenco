@@ -114,15 +114,12 @@ function App() {
   const [user, setUser] = useState<UserProfile | null>(null)
   const [token, setToken] = useState<string | null>(null)
   const [showAuthModal, setShowAuthModal] = useState(false)
-  const [authStep, setAuthStep] = useState<'email' | 'otp' | 'google-captcha'>('email')
+  const [authStep, setAuthStep] = useState<'email' | 'google-captcha'>('email')
   const [useGsiButton, setUseGsiButton] = useState(isGoogleConfigured)
   const [tempGoogleCredential, setTempGoogleCredential] = useState('')
-  const [emailInput, setEmailInput] = useState('')
-  const [otpInput, setOtpInput] = useState<string[]>(Array(6).fill(''))
   const [otpError, setOtpError] = useState('')
   const [otpSuccessMsg, setOtpSuccessMsg] = useState('')
   const [pendingQuery, setPendingQuery] = useState('')
-  const [resendTimer, setResendTimer] = useState(0)
   const [showProfilePopover, setShowProfilePopover] = useState(false)
 
   // Filtering & Love/Favorite states
@@ -134,9 +131,6 @@ function App() {
   // Feedback states
   const [toastMessage, setToastMessage] = useState<string | null>(null)
   const [toastType, setToastType] = useState<'success' | 'error' | 'info'>('success')
-
-  // OTP inputs references
-  const otpRefs = useRef<(HTMLInputElement | null)[]>([])
 
   // Load user session and favorites on start
   useEffect(() => {
@@ -232,14 +226,6 @@ function App() {
     }
   }, [])
 
-  // Timer for OTP resending
-  useEffect(() => {
-    if (resendTimer <= 0) return
-    const interval = setInterval(() => {
-      setResendTimer(prev => prev - 1)
-    }, 1000)
-    return () => clearInterval(interval)
-  }, [resendTimer])
 
   // Google GSI script initialization inside modal
   useEffect(() => {
@@ -438,96 +424,6 @@ function App() {
     }
   }
 
-  // Send OTP handler
-  const handleSendOTP = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!emailInput || !emailInput.includes('@')) {
-      setOtpError('Please enter a valid email address.')
-      return
-    }
-
-    setOtpError('')
-    setOtpSuccessMsg('')
-
-    try {
-      const res = await fetch(`${API_URL}/api/auth/send-otp`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: emailInput,
-          captchaAnswer: captchaAnswer,
-          captchaToken: captchaToken
-        })
-      })
-      const data = await res.json()
-      if (res.ok && data.success) {
-        setAuthStep('otp')
-        setResendTimer(60)
-
-        if (data.devMode) {
-          setOtpSuccessMsg('Development Mode: OTP logged to backend console!')
-          triggerToast('OTP logged to backend terminal!', 'info')
-        } else {
-          setOtpSuccessMsg('Verification code sent to your email.')
-          triggerToast('Verification code sent!', 'success')
-        }
-
-        // Focus first OTP box
-        setTimeout(() => {
-          otpRefs.current[0]?.focus()
-        }, 100)
-      } else {
-        setOtpError(data.error || 'Failed to send OTP. Please try again.')
-        fetchAuthCaptcha(); // Refresh captcha
-      }
-    } catch (err) {
-      setOtpError('Failed to connect to backend server.')
-    }
-  }
-
-  // Verify OTP handler
-  const handleVerifyOTP = async (e: React.FormEvent) => {
-    e.preventDefault()
-    const otpCode = otpInput.join('')
-    if (otpCode.length < 6) {
-      setOtpError('Please enter the full 6-digit code.')
-      return
-    }
-
-    setOtpError('')
-
-    try {
-      const res = await fetch(`${API_URL}/api/auth/verify-otp`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: emailInput, otp: otpCode })
-      })
-      const data = await res.json()
-      if (res.ok && data.success) {
-        localStorage.setItem('zen_token', data.token)
-        localStorage.setItem('zen_user', JSON.stringify(data.user))
-        setToken(data.token)
-        setUser(data.user)
-        setShowAuthModal(false)
-        triggerToast(`Welcome back, ${data.user.name}!`, 'success')
-
-        // Clear auth inputs
-        setEmailInput('')
-        setOtpInput(Array(6).fill(''))
-
-        // Run pending search
-        if (pendingQuery) {
-          performSearch(pendingQuery, data.token)
-          setPendingQuery('')
-        }
-      } else {
-        setOtpError(data.error || 'Verification failed. Incorrect code.')
-      }
-    } catch (err) {
-      setOtpError('Failed to verify OTP with server.')
-    }
-  }
-
   // Google Login Callback (Handles both GSI response and Mock click)
   const handleGoogleLogin = async (googleCredentialToken?: string) => {
     setOtpError('')
@@ -598,25 +494,6 @@ function App() {
     setSearchQuery('')
     setActiveSearch('')
     triggerToast('Logged out successfully.', 'info')
-  }
-
-  // Input controller for the 6 OTP input boxes
-  const handleOtpBoxChange = (val: string, index: number) => {
-    if (!/^[0-9]?$/.test(val)) return // numbers only
-
-    const newOtp = [...otpInput]
-    newOtp[index] = val
-    setOtpInput(newOtp)
-
-    if (val !== '' && index < 5) {
-      otpRefs.current[index + 1]?.focus()
-    }
-  }
-
-  const handleOtpBoxKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, index: number) => {
-    if (e.key === 'Backspace' && otpInput[index] === '' && index > 0) {
-      otpRefs.current[index - 1]?.focus()
-    }
   }
 
   // Copy Icon SVG Markup Helper
@@ -1051,107 +928,6 @@ function App() {
                     </button>
                   )}
                 </div>
-
-                <div className="auth-separator">
-                  <span className="separator-line"></span>
-                  <span className="separator-text">or use email</span>
-                  <span className="separator-line"></span>
-                </div>
-
-                {/* Email Entry Form */}
-                <form onSubmit={handleSendOTP} className="email-auth-form">
-                  <div className="input-group">
-                    <label className="input-label">Email Address</label>
-                    <input
-                      type="email"
-                      className="modal-input"
-                      placeholder="e.g. sayan@example.com"
-                      value={emailInput}
-                      onChange={(e) => setEmailInput(e.target.value)}
-                      required
-                    />
-                  </div>
-
-                  {captchaSvg && (
-                    <div className="captcha-group">
-                      <label className="input-label">Prove you are human</label>
-                      <div className="captcha-container">
-                        <div className="captcha-image" dangerouslySetInnerHTML={{ __html: captchaSvg }} />
-                        <button type="button" className="captcha-refresh-btn" onClick={fetchAuthCaptcha} title="Refresh Captcha">
-                          <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10" /><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" /></svg>
-                        </button>
-                        <input
-                          type="text"
-                          className="modal-input captcha-input"
-                          placeholder="Answer"
-                          value={captchaAnswer}
-                          onChange={(e) => setCaptchaAnswer(e.target.value)}
-                          required
-                          autoComplete="off"
-                        />
-                      </div>
-                    </div>
-                  )}
-
-                  <button type="submit" className="modal-submit-btn">
-                    Send Verification Code
-                  </button>
-                </form>
-              </div>
-            )}
-
-            {authStep === 'otp' && (
-              <div className="auth-step-container">
-                {/* OTP Verification Form */}
-                <form onSubmit={handleVerifyOTP} className="otp-verification-form">
-                  <p className="otp-instructions">
-                    We sent a 6-digit code to <strong className="user-email-highlight">{emailInput}</strong>. Enter it below to continue.
-                  </p>
-
-                  <div className="otp-digits-wrapper">
-                    {otpInput.map((digit, idx) => (
-                      <input
-                        key={idx}
-                        type="text"
-                        maxLength={1}
-                        className="otp-digit-input"
-                        value={digit}
-                        ref={(el) => { otpRefs.current[idx] = el; }}
-                        onChange={(e) => handleOtpBoxChange(e.target.value, idx)}
-                        onKeyDown={(e) => handleOtpBoxKeyDown(e, idx)}
-                        autoComplete="off"
-                        pattern="[0-9]*"
-                        inputMode="numeric"
-                      />
-                    ))}
-                  </div>
-
-                  <button type="submit" className="modal-submit-btn">
-                    Verify & Continue Search
-                  </button>
-
-                  <div className="otp-resend-section">
-                    {resendTimer > 0 ? (
-                      <p className="resend-countdown">Resend code in {resendTimer}s</p>
-                    ) : (
-                      <button type="button" className="resend-btn" onClick={handleSendOTP}>
-                        Resend Code
-                      </button>
-                    )}
-                  </div>
-
-                  <button
-                    type="button"
-                    className="modal-back-btn"
-                    onClick={() => {
-                      setAuthStep('email')
-                      setOtpError('')
-                      setOtpSuccessMsg('')
-                    }}
-                  >
-                    ← Back to Email entry
-                  </button>
-                </form>
               </div>
             )}
 
